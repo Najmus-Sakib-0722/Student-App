@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HSC সায়েন্স হাব - স্টুডেন্ট অ্যাপ</title>
+    
+    <!-- MathJax & Confetti -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* ফন্ট ও বেসিক স্টাইল (আপনার আগের স্টাইলগুলো এখানে সব ঠিক রাখা হয়েছে) */
+        @font-face {
+            font-family: 'Hind Siliguri';
+            src: url('https://fonts.gstatic.com/s/hindsiliguri/v12/ijwTs5juQtsyLLR5jN4cxBEoTJzaww.woff2') format('woff2');
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Material Icons';
+            font-style: normal;
+            font-weight: 400;
+            src: url('https://fonts.gstatic.com/s/materialicons/v140/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2') format('woff2');
+        }
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal; font-style: normal; font-size: 24px; line-height: 1; text-transform: none;
+            display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-smoothing: antialiased;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Hind Siliguri', sans-serif; background: #f0f2f5; color: #1e293b; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+
+        /* ========= নতুন লগইন স্ক্রিন ডিজাইন ========= */
+        #loginScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; padding: 20px;
+        }
+        .login-card {
+            background: white; border-radius: 24px; padding: 40px 30px;
+            width: 100%; max-width: 400px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            animation: slideUp 0.6s ease;
+        }
+        .app-logo {
+            width: 80px; height: 80px; background: #eef2ff; border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            color: #4f46e5; font-size: 40px;
+        }
+        .login-title { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+        .login-subtitle { font-size: 14px; color: #64748b; margin-bottom: 30px; }
+        .google-btn {
+            background: white; border: 1px solid #e2e8f0; border-radius: 50px;
+            padding: 12px 20px; font-size: 16px; font-weight: 600; color: #334155;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        .google-btn:active { background: #f8fafc; transform: scale(0.98); }
+        .google-icon { width: 24px; height: 24px; }
+        .loading-spinner {
+            border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5;
+            border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: none;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* মূল অ্যাপ কন্টেইনার */
+        .app-container {
+            max-width: 480px; margin: 0 auto; background: white; min-height: 100vh;
+            position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: none; flex-direction: column; transition: background 0.3s;
+        }
+
+        /* --- আপনার আগের সব স্টাইল নিচে হুবহু রাখা হয়েছে --- */
+        .app-header { background: #4f46e5; padding: 16px; display: flex; align-items: center; justify-content: space-between; color: white; position: sticky; top: 0; z-index: 100; }
+        .streak-badge { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+        .menu-btn, .profile-btn { cursor: pointer; padding: 4px; }
+        .header-title { font-size: 18px; font-weight: 600; }
+        .side-menu { position: fixed; top: 0; left: -100%; width: 85%; max-width: 320px; height: 100vh; background: white; z-index: 1000; transition: left 0.3s ease; box-shadow: 2px 0 10px rgba(0,0,0,0.2); overflow-y: auto; }
+        .side-menu.open { left: 0; }
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
+        .menu-overlay.open { display: block; }
+        .menu-header { background-image: linear-gradient(135deg, #4f46e5, #7c3aed); padding: 30px 20px; color: white; }
+        .menu-user { display: flex; align-items: center; gap: 15px; }
+        .menu-avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid rgba(255,255,255,0.3); }
+        .menu-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .menu-avatar span { font-size: 40px; color: white; }
+        .menu-user-info div:first-child { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .menu-user-info div:last-child { font-size: 13px; opacity: 0.9; }
+        .menu-items { padding: 16px 0; }
+        .menu-item { display: flex; align-items: center; gap: 16px; padding: 16px 24px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
+        .menu-item:active { background: #f8fafc; }
+        .menu-item .material-icons { color: #64748b; }
+        .drawer-theme-toggle { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #f1f5f9; }
+        .main-content { flex: 1; padding: 16px; padding-bottom: 80px; background: #f8fafc; }
+        .practice-drawer-toggle { background: white; border-radius: 50px; padding: 12px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; border: 1px solid #e2e8f0; }
+        .practice-drawer { background: white; border-radius: 24px; margin-bottom: 20px; padding: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); display: none; border: 1px solid #e2e8f0; }
+        .practice-drawer.open { display: block; }
+        .practice-drawer-item { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 16px; margin-bottom: 8px; cursor: pointer; border: 1px solid #e2e8f0; }
+        .practice-drawer-item .material-icons { color: #4f46e5; font-size: 28px; }
+        .practice-drawer-item-content { flex: 1; }
+        .practice-drawer-item-title { font-weight: 600; margin-bottom: 4px; }
+        .practice-drawer-item-desc { font-size: 12px; color: #64748b; }
+        .bottom-tab { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: white; display: flex; justify-content: space-around; padding: 8px 12px 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); border-top: 1px solid #e2e8f0; z-index: 100; }
+        .tab-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 30px; cursor: pointer; color: #64748b; flex: 1; }
+        .tab-item.active { background: #4f46e5; color: white; }
+        .tab-item span:first-child { font-size: 22px; }
+        .tab-label { font-size: 11px; font-weight: 500; }
+        .welcome-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+        .stat-box { background: white; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-number { font-size: 20px; font-weight: 700; color: #4f46e5; margin-bottom: 4px; }
+        .stat-label { font-size: 11px; color: #64748b; }
+        .subject-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+        .subject-card { background: white; border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .question-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; position: relative; }
+        .preset-default { border-left: 4px solid #4f46e5; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .question-text { font-size: 16px; font-weight: 500; margin-bottom: 16px; line-height: 1.6; }
+        .poll-container { display: flex; flex-direction: column; gap: 8px; }
+        .poll-option { position: relative; overflow: hidden; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; min-height: 48px; display: flex; align-items: center; padding: 10px 16px; cursor: pointer; }
+        .poll-option::before { content: ''; display: inline-block; width: 20px; height: 20px; border: 2px solid #cbd5e1; border-radius: 50%; margin-right: 12px; }
+        .voted .poll-option { cursor: default; }
+        .voted .poll-option::before { display: none; }
+        .poll-content { position: relative; z-index: 2; width: 100%; display: flex; align-items: center; }
+        .option-letter { font-weight: 700; color: #4f46e5; margin-right: 10px; min-width: 24px; }
+        .voted .poll-option.correct { border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); }
+        .voted .poll-option.wrong { border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .explanation-box { margin-top: 16px; padding: 16px; background: #fef9c3; border-radius: 12px; border-left: 4px solid #eab308; display: none; }
+        .explanation-box.show { display: block; }
+        .filter-section { background: white; border-radius: 16px; padding: 16px; margin-bottom: 20px; display: grid; gap: 10px; }
+        .filter-select, .search-input { padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; font-family: 'Hind Siliguri', sans-serif; font-size: 14px; width: 100%; }
+        .btn { background: #4f46e5; color: white; border: none; padding: 14px 24px; border-radius: 50px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; font-family: 'Hind Siliguri', sans-serif; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 16px; }
+        .modal.open { display: flex; }
+        .modal-content { background: white; border-radius: 24px; padding: 24px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
+        .close-btn { font-size: 28px; cursor: pointer; color: #64748b; }
+        .switch { position: relative; display: inline-block; width: 52px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; border-radius: 34px; transition: .3s; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s; }
+        input:checked + .slider { background-color: #4f46e5; }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 50px; z-index: 3000; font-size: 14px; text-align: center; }
+        .message.success { background: #10b981; }
+        .message.error { background: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <!-- ========= লগইন স্ক্রিন ========= -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="app-logo">
+                <span class="material-icons">science</span>
+            </div>
+            <h1 class="login-title">HSC Science Hub</h1>
+            <p class="login-subtitle">বিজ্ঞানের প্রস্তুতি হোক আরো স্মার্ট</p>
+            
+            <button class="google-btn" id="loginBtn" onclick="triggerGoogleLogin()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" class="google-icon">
+                <span>Google দিয়ে লগইন করুন</span>
+                <div class="loading-spinner" id="loginSpinner"></div>
+            </button>
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 15px;">আপনার তথ্য সম্পূর্ণ নিরাপদ</p>
+        </div>
+    </div>
+
+    <!-- ========= মূল অ্যাপ (লগইন ছাড়া হিডেন থাকবে) ========= -->
+    <div class="app-container" id="appSection">
+        <!-- Header -->
+        <div class="app-header">
+            <span class="material-icons menu-btn" onclick="toggleMenu()">menu</span>
+            <span class="header-title" id="headerTitle">হোম</span>
+            <div class="streak-badge" title="ডেইলি স্ট্রিক">
+                🔥 <span id="headerStreak">0</span>
+            </div>
+        </div>
+
+        <!-- Side Menu -->
+        <div class="side-menu" id="sideMenu">
+            <div class="menu-header">
+                <div class="menu-user" id="menuUserInfo" onclick="openProfileModal()">
+                    <div class="menu-avatar" id="menuAvatar">
+                        <span class="material-icons" id="defaultAvatarIcon">account_circle</span>
+                        <img id="profileImageInDrawer" style="display: none;" alt="Profile">
+                    </div>
+                    <div class="menu-user-info">
+                        <div id="menuName">লোড হচ্ছে...</div>
+                        <div id="menuDetails">স্টুডেন্ট</div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu-items">
+                <div class="menu-item" onclick="navigateMenu('bookmarks')">
+                    <span class="material-icons">bookmark</span><span>বুকমার্ক করা প্রশ্ন</span>
+                </div>
+                <div class="menu-item" onclick="navigateMenu('mistakes')">
+                    <span class="material-icons">error</span><span>ভুল খাতা</span>
+                </div>
+                <div class="menu-item" onclick="openProfileModal()">
+                    <span class="material-icons">person</span><span>প্রোফাইল</span>
+                </div>
+                <div class="drawer-theme-toggle">
+                    <span><span class="material-icons" style="vertical-align: middle; margin-right: 16px;">dark_mode</span> ডার্ক মোড</span>
+                    <label class="switch">
+                        <input type="checkbox" id="drawerDarkModeToggle" onchange="toggleDarkModeFromDrawer()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="menu-item" onclick="triggerLogout()" style="color: #ef4444;">
+                    <span class="material-icons" style="color: #ef4444;">logout</span><span>লগআউট</span>
+                </div>
+            </div>
+        </div>
+        <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Dynamic Content -->
+        </div>
+
+        <!-- Bottom Tab -->
+        <div class="bottom-tab">
+            <div class="tab-item active" onclick="switchTab('home')" id="tabHome">
+                <span class="material-icons">home</span><span class="tab-label">হোম</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('practice')" id="tabPractice">
+                <span class="material-icons">edit_note</span><span class="tab-label">প্রাকটিস</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('exam')" id="tabExam">
+                <span class="material-icons">quiz</span><span class="tab-label">পরীক্ষা</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- প্রোফাইল মোডাল -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👤 প্রোফাইল</h2>
+                <span class="close-btn" onclick="closeProfileModal()">&times;</span>
+            </div>
+            <div id="profileContent"></div>
+        </div>
+    </div>
+
+    <!-- ==================== UI লজিক ও লোকাল স্টোরেজ (Script) ==================== -->
+    <script>
+        // গ্লোবাল ভেরিয়েবল
+        let currentUserUid = null;
+        let allQuestions = [];
+        let filteredQuestions = [];
+        let userAnswers = {}; 
+        let bookmarked = [];
+        let mistakes = [];
+        
+        let practiceHistory = { searchTerm: '', selectedChapter: '', currentMode: 'all', lastAnswers: {} };
+        
+        let profileData = { name: 'স্টুডেন্ট', email: '', photo: null, lastActive: new Date().toDateString(), streak: 1 };
+        let profileSettings = { darkMode: false, soundEffects: true, questionPreset: 'preset-default' };
+        let stats = { total: 0, solved: 0, correct: 0 };
+
+        // সাউন্ড ইফেক্ট ফাংশন (আগের মতোই)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (!profileSettings.soundEffects) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            if (type === 'correct') { osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5); osc.start(); osc.stop(audioCtx.currentTime + 0.5); }
+            else if (type === 'wrong') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); osc.start(); osc.stop(audioCtx.currentTime + 0.3); }
+        }
+
+        function showMessage(text, type) {
+            const msg = document.createElement('div');
+            msg.className = `message ${type}`; msg.textContent = text;
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 3000);
+        }
+
+        // ==================== অ্যাপ ইনিশিয়ালাইজেশন (লগইন হওয়ার পর) ====================
+        function initializeStudentApp(user) {
+            currentUserUid = user.uid;
+            profileData.name = user.displayName || 'স্টুডেন্ট';
+            profileData.email = user.email;
+            profileData.photo = user.photoURL;
+
+            // লোকাল ডাটা লোড করা
+            const savedQ = localStorage.getItem('hscQuestions');
+            if (savedQ) allQuestions = JSON.parse(savedQ);
+            else allQuestions = []; // যদি কিছু না থাকে, ফায়ারবেস থেকে আসবে
+
+            const ans = localStorage.getItem('userAnswers_' + currentUserUid);
+            if (ans) userAnswers = JSON.parse(ans);
+
+            const bkmrk = localStorage.getItem('bookmarked_' + currentUserUid);
+            if (bkmrk) bookmarked = JSON.parse(bkmrk);
+
+            const mstk = localStorage.getItem('mistakes_' + currentUserUid);
+            if (mstk) mistakes = JSON.parse(mstk);
+
+            const prof = localStorage.getItem('profileData_' + currentUserUid);
+            if (prof) {
+                let loadedProf = JSON.parse(prof);
+                profileData.streak = loadedProf.streak || 1;
+                profileData.lastActive = loadedProf.lastActive || new Date().toDateString();
+            }
+
+            calculateStats();
+            updateStreak();
+            updateDrawerProfile();
+            applyTheme();
+            switchTab('home');
+
+            // ফায়ারবেস থেকে নতুন প্রশ্ন আনার কল
+            if(window.syncQuestionsFromCloud) {
+                window.syncQuestionsFromCloud();
+            }
+        }
+
+        // লোকাল স্টোরেজে সেভ এবং ফায়ারবেসে সিঙ্ক
+        function saveAllData() {
+            if(!currentUserUid) return;
+            localStorage.setItem('userAnswers_' + currentUserUid, JSON.stringify(userAnswers));
+            localStorage.setItem('bookmarked_' + currentUserUid, JSON.stringify(bookmarked));
+            localStorage.setItem('mistakes_' + currentUserUid, JSON.stringify(mistakes));
+            localStorage.setItem('profileData_' + currentUserUid, JSON.stringify(profileData));
+            
+            calculateStats();
+
+            // অনলাইনে থাকলে ব্যাকগ্রাউন্ডে অ্যাডমিন প্যানেলে সিঙ্ক হবে
+            if(navigator.onLine && window.syncProgressToCloud) {
+                window.syncProgressToCloud(stats.solved, stats.correct, profileData.streak);
+            }
+        }
+
+        function calculateStats() {
+            stats.total = allQuestions.length;
+            stats.solved = Object.keys(userAnswers).length;
+            stats.correct = Object.entries(userAnswers).filter(([id, ans]) => {
+                const q = allQuestions.find(q => q.id === parseInt(id));
+                return q && q.correct === ans;
+            }).length;
+        }
+
+        function updateStreak() {
+            const todayDate = new Date().toDateString();
+            if (profileData.lastActive !== todayDate) {
+                const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+                if (profileData.lastActive === yesterday.toDateString()) profileData.streak++;
+                else profileData.streak = 1;
+                profileData.lastActive = todayDate;
+                saveAllData();
+            }
+            document.getElementById('headerStreak').textContent = profileData.streak;
+        }
+
+        function updateDrawerProfile() {
+            document.getElementById('menuName').textContent = profileData.name;
+            document.getElementById('menuDetails').textContent = profileData.email;
+            const defaultIcon = document.getElementById('defaultAvatarIcon');
+            const profileImg = document.getElementById('profileImageInDrawer');
+            if (profileData.photo) {
+                profileImg.src = profileData.photo; profileImg.style.display = 'block'; defaultIcon.style.display = 'none';
+            }
+        }
+
+        // থিম
+        function applyTheme() {
+            if (document.getElementById('drawerDarkModeToggle').checked) document.body.classList.add('dark-mode');
+            else document.body.classList.remove('dark-mode');
+        }
+        function toggleDarkModeFromDrawer() { applyTheme(); }
+
+        // নেভিগেশন ও কন্টেন্ট
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+            if (tab === 'home') { document.getElementById('headerTitle').textContent = 'হোম'; loadHomeContent(); }
+            else if (tab === 'practice') { document.getElementById('headerTitle').textContent = 'প্রাকটিস'; loadPracticeContent(); }
+            else if (tab === 'exam') { document.getElementById('headerTitle').textContent = 'পরীক্ষা'; loadExamContent(); }
+        }
+
+        function toggleMenu() {
+            document.getElementById('sideMenu').classList.toggle('open');
+            document.getElementById('menuOverlay').classList.toggle('open');
+        }
+
+        function loadHomeContent() {
+            calculateStats();
+            document.getElementById('mainContent').innerHTML = `
+                <div class="welcome-card">
+                    <div class="welcome-title">👋 স্বাগতম, ${profileData.name.split(' ')[0]}!</div>
+                    <div>আপনার প্রিপারেশন চালিয়ে যান</div>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-box" onclick="switchTab('practice')"><div class="stat-number">${stats.total}</div><div class="stat-label">মোট প্রশ্ন</div></div>
+                    <div class="stat-box" onclick="switchTab('practice')"><div class="stat-number">${stats.solved}</div><div class="stat-label">সমাধান</div></div>
+                    <div class="stat-box"><div class="stat-number">${bookmarked.length}</div><div class="stat-label">বুকমার্ক</div></div>
+                    <div class="stat-box" style="color: #ef4444;"><div class="stat-number" style="color: inherit;">${mistakes.length}</div><div class="stat-label">ভুল খাতা</div></div>
+                </div>
+                <div style="font-weight: 600; margin-bottom: 12px;">📚 কুইক ফিল্টার</div>
+                <div class="subject-grid">
+                    <div class="subject-card" onclick="switchTab('practice')"><div class="subject-icon">⚡</div><div class="subject-name">পদার্থ</div></div>
+                    <div class="subject-card" onclick="switchTab('practice')"><div class="subject-icon">🧪</div><div class="subject-name">রসায়ন</div></div>
+                    <div class="subject-card" onclick="switchTab('practice')"><div class="subject-icon">🧬</div><div class="subject-name">জীববিজ্ঞান</div></div>
+                </div>
+            `;
+        }
+
+        function loadPracticeContent() {
+            filteredQuestions = [...allQuestions];
+            document.getElementById('mainContent').innerHTML = `
+                <div class="filter-section">
+                    <input type="text" id="searchInput" class="search-input" placeholder="প্রশ্ন খুঁজুন..." onkeyup="filterPractice()">
+                </div>
+                <div id="practiceList"></div>
+            `;
+            displayPracticeQuestions();
+        }
+
+        function filterPractice() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            filteredQuestions = allQuestions.filter(q => q.question.toLowerCase().includes(search));
+            displayPracticeQuestions();
+        }
+
+        function displayPracticeQuestions() {
+            const container = document.getElementById('practiceList');
+            if (filteredQuestions.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;">কোনো প্রশ্ন পাওয়া যায়নি। (ইন্টারনেট কানেকশন চেক করুন)</div>';
+                return;
+            }
+
+            container.innerHTML = filteredQuestions.map((q, index) => {
+                const userAns = userAnswers[q.id];
+                const isVoted = userAns !== undefined;
+                return `
+                    <div class="question-card preset-default">
+                        <div class="question-header">
+                            <span style="font-size: 12px; color: #64748b; background: #e2e8f0; padding: 4px 8px; border-radius: 4px;">${q.chapter}</span>
+                        </div>
+                        <div class="question-text">${q.question}</div>
+                        <div class="poll-container ${isVoted ? 'voted' : ''}">
+                            ${q.options.map((opt, i) => {
+                                let optClass = 'poll-option';
+                                if (isVoted) {
+                                    if (i === q.correct) optClass += ' correct';
+                                    else if (userAns === i) optClass += ' wrong';
+                                }
+                                return `
+                                    <div class="${optClass}" onclick="selectPollAnswer(${q.id}, ${i})">
+                                        <div class="poll-content">
+                                            <span class="option-letter">${String.fromCharCode(65 + i)}.</span> ${opt}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="explanation-box ${isVoted ? 'show' : ''}">
+                            <strong>📖 ব্যাখ্যা:</strong> ${q.explanation}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        function selectPollAnswer(qId, selectedIdx) {
+            if (userAnswers[qId] !== undefined) return;
+            const q = allQuestions.find(x => x.id === qId);
+            const isCorrect = selectedIdx === q.correct;
+            
+            userAnswers[qId] = selectedIdx;
+            if (isCorrect) { playSound('correct'); confetti({ particleCount: 100, origin: { y: 0.6 }}); mistakes = mistakes.filter(id => id !== qId); } 
+            else { playSound('wrong'); if (!mistakes.includes(qId)) mistakes.push(qId); }
+
+            saveAllData(); displayPracticeQuestions(); 
+        }
+
+        // প্রোফাইল মোডাল
+        function openProfileModal() {
+            toggleMenu();
+            const accuracy = stats.solved > 0 ? Math.round((stats.correct / stats.solved) * 100) : 0;
+            document.getElementById('profileContent').innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="${profileData.photo || 'https://via.placeholder.com/100'}" style="width: 100px; border-radius: 50%; border: 3px solid #4f46e5;">
+                    <h3>${profileData.name}</h3>
+                    <p>${profileData.email}</p>
+                </div>
+                <div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="stat-box"><div class="stat-number">${stats.solved}</div><div class="stat-label">সমাধান</div></div>
+                    <div class="stat-box"><div class="stat-number">${accuracy}%</div><div class="stat-label">নির্ভুলতা</div></div>
+                    <div class="stat-box"><div class="stat-number">${profileData.streak}</div><div class="stat-label">স্ট্রিক 🔥</div></div>
+                </div>
+            `;
+            document.getElementById('profileModal').classList.add('open');
+        }
+        function closeProfileModal() { document.getElementById('profileModal').classList.remove('open'); }
+
+        function loadExamContent() {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="welcome-card" style="text-align: center;">
+                    <span style="font-size: 48px; display: block;">📝</span>
+                    <h3>কাস্টম পরীক্ষা</h3>
+                    <p style="font-size: 14px; margin-top: 10px;">খুব শীঘ্রই এই ফিচারটি চালু হবে!</p>
+                </div>
+            `;
+        }
+    </script>
+
+    <!-- ==================== Firebase Module (Authentication & Sync) ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } 
+        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, getDocs } 
+        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBjuP-QLZXkaX-E4UqRrNbu3gKpOEIiTXU",
+            authDomain: "hsc-science-hub.firebaseapp.com",
+            projectId: "hsc-science-hub",
+            storageBucket: "hsc-science-hub.firebasestorage.app",
+            messagingSenderId: "339858983706",
+            appId: "1:339858983706:web:9e371a600a605a596bfaa3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // 1. Google Login (WebView/HopWeb Friendly using Redirect)
+        window.triggerGoogleLogin = function() {
+            document.getElementById('loginBtn').style.opacity = '0.7';
+            document.getElementById('loginBtn').querySelector('span').style.display = 'none';
+            document.getElementById('loginSpinner').style.display = 'block';
+            signInWithRedirect(auth, provider);
+        }
+
+        // 2. Handle Login State
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User is logged in
+                document.getElementById("loginScreen").style.display = "none";
+                document.getElementById("appSection").style.display = "flex";
+                
+                // Save basic user info to Firebase (Optional but good)
+                try {
+                    await setDoc(doc(db, "students", user.uid), {
+                        name: user.displayName, email: user.email, photo: user.photoURL, lastLogin: new Date()
+                    }, { merge: true });
+                } catch(e) {}
+
+                // Initialize App Logic
+                window.initializeStudentApp(user);
+            } else {
+                // User is not logged in
+                document.getElementById("loginScreen").style.display = "flex";
+                document.getElementById("appSection").style.display = "none";
+            }
+        });
+
+        // Redirect Error Handling (Just in case)
+        getRedirectResult(auth).catch((error) => {
+            alert("লগইন এ সমস্যা হয়েছে: " + error.message);
+            window.location.reload();
+        });
+
+        // 3. Logout
+        window.triggerLogout = function() {
+            if(confirm('আপনি কি লগআউট করতে চান?')) {
+                signOut(auth).then(() => {
+                    window.location.reload();
+                });
+            }
+        }
+
+        // 4. Background Sync: Fetch Questions from Firebase (Cloud -> Local)
+        window.syncQuestionsFromCloud = async function() {
+            if (!navigator.onLine) return; // ইন্টারনেট না থাকলে অফলাইন ডাটাই চলবে
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "questions"));
+                let cloudQuestions = [];
+                querySnapshot.forEach((doc) => {
+                    let qData = doc.data();
+                    qData.id = doc.id; // Admin panel ID mapping
+                    cloudQuestions.push(qData);
+                });
+
+                if (cloudQuestions.length > 0) {
+                    allQuestions = cloudQuestions;
+                    localStorage.setItem('hscQuestions', JSON.stringify(allQuestions));
+                    
+                    // রিফ্রেশ UI (যদি ইউজার হোম বা প্রাকটিস ট্যাবে থাকে)
+                    if(document.getElementById('tabHome').classList.contains('active')) loadHomeContent();
+                    if(document.getElementById('tabPractice').classList.contains('active')) loadPracticeContent();
+                }
+            } catch (error) {
+                console.log("Firebase থেকে প্রশ্ন আনতে সমস্যা:", error);
+            }
+        }
+
+        // 5. Background Sync: Send Progress to Firebase (Local -> Cloud for Admin)
+        window.syncProgressToCloud = async function(solvedCount, correctCount, currentStreak) {
+            if (!navigator.onLine || !auth.currentUser) return;
+            
+            try {
+                await setDoc(doc(db, "students", auth.currentUser.uid), {
+                    totalSolved: solvedCount,
+                    correctAnswers: correctCount,
+                    streak: currentStreak,
+                    lastActive: new Date().toDateString()
+                }, { merge: true });
+            } catch (error) {
+                console.log("প্রগ্রেস সিঙ্ক ব্যর্থ:", error);
+            }
+        }
+    </script>
+</body>
+</html>
